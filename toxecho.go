@@ -139,25 +139,6 @@ func main() {
 			log.Println("on friend connection status:", friendNumber, status, friendId, err)
 		}
 	}, nil)
-	t.CallbackFriendStatus(func(t *tox.Tox, friendNumber uint32, status int, userData interface{}) {
-		if debug {
-			friendId, err := t.FriendGetPublicKey(friendNumber)
-			log.Println("on friend status:", friendNumber, status, friendId, err)
-		}
-	}, nil)
-	t.CallbackFriendStatusMessage(func(t *tox.Tox, friendNumber uint32, statusText string, userData interface{}) {
-		if debug {
-			friendId, err := t.FriendGetPublicKey(friendNumber)
-			log.Println("on friend status text:", friendNumber, statusText, friendId, err)
-		}
-	}, nil)
-
-	t.CallbackFriendStatusMessage(func(t *tox.Tox, friendNumber uint32, statusText string, userData interface{}) {
-		if debug {
-			friendId, err := t.FriendGetPublicKey(friendNumber)
-			log.Println("on friend status text:", friendNumber, statusText, friendId, err)
-		}
-	}, nil)
 
 	t.CallbackFriendLossyPacketAdd(func(t *tox.Tox, friendNumber uint32, data string, userData interface{}) {
 		if debug {
@@ -197,54 +178,6 @@ func main() {
 			log.Println("on call state:", friendNumber, state)
 		}
 	}, nil)
-
-	av.CallbackAudioReceiveFrame(func(av *tox.ToxAV, friendNumber uint32, pcm []byte,
-		sampleCount int, channels int, samplingRate int, userData interface{}) {
-		if debug {
-			if rand.Int()%23 == 3 {
-				log.Println("on recv audio frame:", friendNumber, len(pcm), sampleCount, channels, samplingRate)
-			}
-		}
-		r, err := av.AudioSendFrame(friendNumber, pcm, sampleCount, channels, samplingRate)
-		if err != nil {
-			log.Println(err, r)
-		}
-	}, nil)
-	av.CallbackVideoReceiveFrame(func(av *tox.ToxAV, friendNumber uint32, width uint16, height uint16,
-		frames []byte, userData interface{}) {
-		if debug {
-			if rand.Int()%45 == 3 {
-				log.Println("on recv video frame:", friendNumber, width, height, len(frames))
-			}
-		}
-		r, err := av.VideoSendFrame(friendNumber, width, height, frames)
-		if err != nil {
-			log.Println(err, r)
-		}
-	}, nil)
-
-	// toxav loops
-	go func() {
-		shutdown := false
-		loopc := 0
-		itval := 0
-		for !shutdown {
-			iv := av.IterationInterval()
-			if iv != itval {
-				// wtf
-				if iv-itval > 20 || itval-iv > 20 {
-					log.Println("av itval changed:", itval, iv, iv-itval, itval-iv)
-				}
-				itval = iv
-			}
-
-			av.Iterate()
-			loopc += 1
-			time.Sleep(1000 * 50 * time.Microsecond)
-		}
-
-		av.Kill()
-	}()
 
 	// toxcore loops
 	shutdown := false
