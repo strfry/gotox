@@ -154,30 +154,33 @@ func main() {
 		}
 	}, nil)
 
+	t.CallbackFriendLosslessPacketAdd(func(t *tox.Tox, friendNumber uint32, data string, userData interface{}) {
+		if debug {
+			var pkgid = data[0]
+                        if rand.Int()%23 == 3 {
+				log.Println("got lossless data from, pkgid, data :", friendNumber, pkgid, data)
+			}
+
+			err := t.FriendSendLosslessPacket(friendNumber, data)
+			if err != nil {
+				log.Println("FriendSendLosslessPacket error :", err)
+			}
+		}
+	}, nil)
+
 	// audio/video
-	av, err := tox.NewToxAV(t)
+	msi, err := tox.NewMSISession(t)
 	if err != nil {
-		log.Println(err, av)
+		log.Println(err, msi)
 	}
-	if av == nil {
-	}
-	av.CallbackCall(func(av *tox.ToxAV, friendNumber uint32, audioEnabled bool,
-		videoEnabled bool, userData interface{}) {
-		if debug {
-			log.Println("oncall:", friendNumber, audioEnabled, videoEnabled)
-		}
-		var audioBitRate uint32 = 48
-		var videoBitRate uint32 = 64
-		r, err := av.Answer(friendNumber, audioBitRate, videoBitRate)
-		if err != nil {
-			log.Println(err, r)
-		}
-	}, nil)
-	av.CallbackCallState(func(av *tox.ToxAV, friendNumber uint32, state uint32, userData interface{}) {
-		if debug {
-			log.Println("on call state:", friendNumber, state)
-		}
-	}, nil)
+
+	// MSI_ON_INVITE
+
+	err = msi.RegisterCallback(0, func(x interface{}, call *tox.MSICall) {
+		log.Println("!!! MSI ACTION CALLBACK", call)
+	})
+
+	log.Println("RegisterCallback", err)
 
 	// toxcore loops
 	shutdown := false
