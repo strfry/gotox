@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/TokTok/go-toxcore-c"
+	"github.com/strfry/go-toxcore-c"
 )
 
 func init() {
