@@ -142,9 +142,9 @@ func main() {
 
 	t.CallbackFriendLossyPacketAdd(func(t *tox.Tox, friendNumber uint32, data string, userData interface{}) {
 		if debug {
-			var pkgid = data[0]
+			//var pkgid = data[0]
                         if rand.Int()%23 == 3 {
-				log.Println("got lossy data from, pkgid, data :", friendNumber, pkgid, data)
+			//	log.Println("got lossy data from, pkgid, data :", friendNumber, pkgid, data)
 			}
 
 			err := t.FriendSendLossyPacket(friendNumber, data)
@@ -174,11 +174,22 @@ func main() {
 		log.Println(err, msi)
 	}
 
-	// MSI_ON_INVITE
+	var cbfn = func(x interface{}, call *tox.MSICall) {
+		log.Println("!!! UNKNOWN MSI ACTION CALLBACK", call)
+	}
 
-	err = msi.RegisterCallback(0, func(x interface{}, call *tox.MSICall) {
+	// MSI_ON_INVITE
+	msi.RegisterCallback(0, func(x interface{}, call *tox.MSICall) {
 		log.Println("!!! MSI ACTION CALLBACK", call)
+		var err = call.Answer(255)
+		log.Println("call.Answer: ", err)
 	})
+	msi.RegisterCallback(1, cbfn)
+	msi.RegisterCallback(2, cbfn)
+	msi.RegisterCallback(3, cbfn)
+	msi.RegisterCallback(4, cbfn)
+	msi.RegisterCallback(5, cbfn)
+	msi.RegisterCallback(6, cbfn)
 
 	log.Println("RegisterCallback", err)
 
