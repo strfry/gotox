@@ -25,7 +25,7 @@ var nickPrefix = "GoToX."
 var statusText = "Send me audio, video."
 
 func start_gstreamer_pipeline(msi *tox.MSICall) {
-	pipeline, err := gstreamer.New("videotestsrc  ! capsfilter name=filter ! vp8enc ! rtpvp8pay ! appsink name=sink")
+	pipeline, err := gstreamer.New("videotestsrc  ! capsfilter name=filter ! vp8enc ! appsink name=sink")
 	if err != nil {
 		log.Println("pipeline create error", err)
 		//t.FailNow()
@@ -50,13 +50,33 @@ func start_gstreamer_pipeline(msi *tox.MSICall) {
 		buffer := <-out
 		fmt.Println("push ", len(buffer))
 
+		toxpacket := RTPToTox(buffer)
+
 		t := msi.Tox()
 		friendNumber := msi.FriendNumber()
-		t.FriendSendLossyPacket(friendNumber, string(buffer))
+		t.FriendSendLossyPacket(friendNumber, string(toxpacket))
 	}
 }
 
+type FrameDumper struct {
+	seqnum int
+}
+
+func (this *FrameDumper) WriteFrame(data string) {
+	filename := fmt.Sprintf("toxav_dumps/frame_%05d.bin", this.seqnum)
+
+	err := ioutil.WriteFile(filename, []byte(data), 0644)
+	if err != nil {
+		log.Println("WriteFile failed: ", filename, err)
+		panic(err)
+	}
+
+	this.seqnum = this.seqnum + 1
+
+}
+
 func main() {
+	//go start_gstreamer_pipeline(nil)
 	log.Println("!!! main")
 
 	opt := tox.NewToxOptions()
@@ -173,24 +193,35 @@ func main() {
 		}
 	}, nil)
 
+	var fd FrameDumper
+	
 	t.CallbackFriendLossyPacketAdd(func(t *tox.Tox, friendNumber uint32, data string, userData interface{}) {
 		if debug {
 			//var pkgid = data[0]
                         if rand.Int()%23 == 3 {
 			//	log.Println("got lossy data from, pkgid, data :", friendNumber, pkgid, data)
 			}
+		}
 
-			//err := t.FriendSendLossyPacket(friendNumber, data)
-			if err != nil {
-				log.Println("FriendSendLossyPacket error :", err)
-			}
+		buffer := []byte(data)
+
+		if (buffer[0] == TOXRTP_TYPE_VIDEO) {
+			log.Println("CallbackFriendSendLossyPacket: Starting to decode video packet :")
+			//ToxToRTP(buffer[1:])
+
+			fd.WriteFrame(data)
+		}
+
+		//err := t.FriendSendLossyPacket(friendNumber, data)
+		if err != nil {
+			log.Println("FriendSendLossyPacket error :", err)
 		}
 	}, nil)
 
 	t.CallbackFriendLosslessPacketAdd(func(t *tox.Tox, friendNumber uint32, data string, userData interface{}) {
 		if debug {
 			var pkgid = data[0]
-                        if rand.Int()%23 == 3 {
+            if rand.Int()%23 == 3 {
 				log.Println("got lossless data from, pkgid, data :", friendNumber, pkgid, data)
 			}
 
@@ -213,8 +244,10 @@ func main() {
 		var err = call.Answer(255)
 		log.Println("call.Answer: ", err)
 
-		go start_gstreamer_pipeline(call)
+		// go start_gstreamer_pipeline(call)
 	})
+
+	// TODO(jsieber): need to wrap each one with individual callbacks to complete interface...
 
 /*
 	msi.RegisterCallback(tox.MSI_ON_START, func(x interface{}, call *tox.MSICall) {
