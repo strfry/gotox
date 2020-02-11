@@ -72,7 +72,7 @@ type ToxAVPacket struct {
 	padding3 uint32
 	padding4 uint32
 
-	// These are the very legacy fields for ToxAV payloading, that couldn't handle more than 64k frames
+	// These are from a former ToxAV version, that couldn't handle packets larger than 64k
 	offset_lower uint16
 	data_length_lower uint16
 
@@ -84,11 +84,13 @@ func (p ToxAVPacket) String() string {
 
 	out += fmt.Sprintf("\tFlags: %d\n", p.flags)
 	out += fmt.Sprintf("\tOffset: %d\n", p.offset_full)
-	out += fmt.Sprintf("\tDataLength: %d\n", p.offset_full)
+	out += fmt.Sprintf("\tOffset (lower): %d\n", p.offset_lower)
+	out += fmt.Sprintf("\tDataLength: %d\n", p.data_length_full)
+	out += fmt.Sprintf("\tDataLength (lower): %d\n", p.offset_lower)
 	out += fmt.Sprintf("\tReceivedLength: %d\n", p.received_length_full)
 
 	out += fmt.Sprintf("\tFrameRecordTimestamp: %d\n", p.frame_record_timestamp)
-	out += fmt.Sprintf("\tEncoderBitrateUserd: %d\n", p.encoder_bit_rate_used)
+	out += fmt.Sprintf("\tEncoderBitrateUser: %d\n", p.encoder_bit_rate_used)
 
 	return out
 }
@@ -117,12 +119,12 @@ func (p *ToxAVPacket) Unmarshal(payload []byte) ([]byte, error) {
 	p.fragment_num = binary.BigEndian.Uint32(payload[28 : 32])
 	p.real_frame_num = binary.BigEndian.Uint32(payload[32 : 36])
 	p.encoder_bit_rate_used = binary.BigEndian.Uint32(payload[36 : 40])
-	p.client_video_capture_delay_ms = binary.BigEndian.Uint32(payload[40 : 48])
+	p.client_video_capture_delay_ms = binary.BigEndian.Uint32(payload[40 : 44])
 
-	// payload[48:68] // padding fields
+	// payload[44:64] // 5xu32 padding fields
 
-	p.offset_lower = binary.BigEndian.Uint16(payload[68 : 70])
-	p.data_length_lower = binary.BigEndian.Uint16(payload[70 : 72])
+	p.offset_lower = binary.BigEndian.Uint16(payload[64 : 68])
+	p.data_length_lower = binary.BigEndian.Uint16(payload[68 : 70])
 
 	payloadIndex = 64
 	if payloadIndex >= payloadLen {

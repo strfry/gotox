@@ -42,12 +42,8 @@ func TestToxAVPacketUnmarshal(t *testing.T) {
 		counter++
 		packet.Unmarshal(frame[12 + 1:]) // drop the channel byte, and the 
 
-		if packet.data_length_lower != uint16(packet.data_length_full) {
-			t.Logf("Data Length field differs from legacy field: %d != %d", packet.data_length_lower, packet.data_length_full)
+		if uint16(packet.data_length_lower) != uint16(packet.data_length_full) {
+			t.Fatal("Difference between data_length fields in ", packet.String())
 		}
-
-		fmt.Println(packet.String())
-
-
 	}
 }
