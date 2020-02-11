@@ -89,8 +89,14 @@ func (p ToxAVPacket) String() string {
 	out += fmt.Sprintf("\tDataLength (lower): %d\n", p.offset_lower)
 	out += fmt.Sprintf("\tReceivedLength: %d\n", p.received_length_full)
 
+	
 	out += fmt.Sprintf("\tFrameRecordTimestamp: %d\n", p.frame_record_timestamp)
 	out += fmt.Sprintf("\tEncoderBitrateUser: %d\n", p.encoder_bit_rate_used)
+	out += fmt.Sprintf("\tClientVideoCaptureDelayMs: %d\n", p.client_video_capture_delay_ms)
+
+
+	out += fmt.Sprintf("\tPadding: %d %d %d %d %d\n", p.padding0, p.padding1, p.padding2, p.padding3, p.padding4)
+
 
 	return out
 }
@@ -123,8 +129,8 @@ func (p *ToxAVPacket) Unmarshal(payload []byte) ([]byte, error) {
 
 	// payload[44:64] // 5xu32 padding fields
 
-	p.offset_lower = binary.BigEndian.Uint16(payload[64 : 68])
-	p.data_length_lower = binary.BigEndian.Uint16(payload[68 : 70])
+	p.offset_lower = binary.BigEndian.Uint16(payload[64 : 66])
+	p.data_length_lower = binary.BigEndian.Uint16(payload[66 : 68])
 
 	payloadIndex = 64
 	if payloadIndex >= payloadLen {
