@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/strfry/go-toxcore-c"
+	"github.com/notedit/gstreamer-go"
 )
 
 func init() {
@@ -22,6 +23,38 @@ var fname = "./toxecho.data"
 var debug = true
 var nickPrefix = "GoToX."
 var statusText = "Send me audio, video."
+
+func start_gstreamer_pipeline(msi *tox.MSICall) {
+	pipeline, err := gstreamer.New("videotestsrc  ! capsfilter name=filter ! vp8enc ! rtpvp8pay ! appsink name=sink")
+	if err != nil {
+		log.Println("pipeline create error", err)
+		//t.FailNow()
+	}
+
+	filter := pipeline.FindElement("filter")
+
+	if filter == nil {
+		//t.Error("pipeline find element error ")
+		log.Println("pipeline find element error", filter)
+	}
+
+	filter.SetCap("video/x-raw,width=1280,height=720")
+
+	appsink := pipeline.FindElement("sink")
+
+	pipeline.Start()
+
+	out := appsink.Poll()
+
+	for {
+		buffer := <-out
+		fmt.Println("push ", len(buffer))
+
+		t := msi.Tox()
+		friendNumber := msi.FriendNumber()
+		t.FriendSendLossyPacket(friendNumber, string(buffer))
+	}
+}
 
 func main() {
 	log.Println("!!! main")
@@ -147,7 +180,7 @@ func main() {
 			//	log.Println("got lossy data from, pkgid, data :", friendNumber, pkgid, data)
 			}
 
-			err := t.FriendSendLossyPacket(friendNumber, data)
+			//err := t.FriendSendLossyPacket(friendNumber, data)
 			if err != nil {
 				log.Println("FriendSendLossyPacket error :", err)
 			}
@@ -161,7 +194,7 @@ func main() {
 				log.Println("got lossless data from, pkgid, data :", friendNumber, pkgid, data)
 			}
 
-			err := t.FriendSendLosslessPacket(friendNumber, data)
+			//err := t.FriendSendLosslessPacket(friendNumber, data)
 			if err != nil {
 				log.Println("FriendSendLosslessPacket error :", err)
 			}
@@ -174,25 +207,32 @@ func main() {
 		log.Println(err, msi)
 	}
 
-	var cbfn = func(x interface{}, call *tox.MSICall) {
-		log.Println("!!! UNKNOWN MSI ACTION CALLBACK", call)
-	}
-
 	// MSI_ON_INVITE
-	msi.RegisterCallback(0, func(x interface{}, call *tox.MSICall) {
+	msi.RegisterCallback(tox.MSI_ON_INVITE, func(x interface{}, call *tox.MSICall) {
 		log.Println("!!! MSI ACTION CALLBACK", call)
 		var err = call.Answer(255)
 		log.Println("call.Answer: ", err)
+
+		go start_gstreamer_pipeline(call)
 	})
-	msi.RegisterCallback(1, cbfn)
-	msi.RegisterCallback(2, cbfn)
-	msi.RegisterCallback(3, cbfn)
-	msi.RegisterCallback(4, cbfn)
-	msi.RegisterCallback(5, cbfn)
-	msi.RegisterCallback(6, cbfn)
 
-	log.Println("RegisterCallback", err)
-
+/*
+	msi.RegisterCallback(tox.MSI_ON_START, func(x interface{}, call *tox.MSICall) {
+		log.Println("MSI_ON_START")
+	})
+	msi.RegisterCallback(tox.MSI_ON_END, func(x interface{}, call *tox.MSICall) {
+		log.Println("MSI_ON_STOP")
+	})
+	msi.RegisterCallback(tox.MSI_ON_ERROR, func(x interface{}, call *tox.MSICall) {
+		log.Println("MSI_ON_ERROR")
+	})
+	msi.RegisterCallback(tox.MSI_ON_PEERTIMEOUT, func(x interface{}, call *tox.MSICall) {
+		log.Println("MSI_ON_PEERTIMEOUT")
+	})
+	msi.RegisterCallback(tox.MSI_ON_CAPABILITIES, func(x interface{}, call *tox.MSICall) {
+		log.Println("MSI_ON_CAPABILITIES")
+	})
+*/
 	// toxcore loops
 	shutdown := false
 	loopc := 0
