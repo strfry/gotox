@@ -10,6 +10,7 @@ import (
 
 type ToxAVPayloader struct{}
 
+
 const (
 	toxAVHeaderSize = 64
 )
@@ -50,6 +51,13 @@ func (p *ToxAVPayloader) Payload(mtu int, payload []byte) [][]byte {
 
 // ToxAVPacket represents the additional headers added before start of the payload by ToxAV
 type ToxAVPacket struct {
+	rtp_head1 byte // to lazy to write out all these bitfields right now
+	rtp_head2 byte // they're not set correctly anyway
+
+	seqnum uint16
+	timestamp uint32
+	
+	// Those proprietary tox fields use the fully extended CSRC headers:
 
     // Bit mask of \ref RTPFlags setting features of the current frame.
 	flags uint64
@@ -110,9 +118,15 @@ func (p *ToxAVPacket) Unmarshal(payload []byte) ([]byte, error) {
 
 	payloadLen := len(payload)
 
-	if payloadLen < 17 {
+	if payloadLen < 17 /*constant likely way off*/ {
 		return nil, fmt.Errorf("Payload is not large enough to container header")
 	}
+
+	// TODO(strfry): read the other RTP fields
+	p.seqnum = binary.BigEndian.Uint16(payload[2 : 4])
+
+	// another hack to avoiding retouching the numbers below...
+	payload = payload[12:]
 
 	payloadIndex := 0
 
