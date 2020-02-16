@@ -17,6 +17,7 @@ func (this *FrameReader) NextFrame() []byte {
 
 	if err != nil {
 		//log.Println("ReadFile failed at", filename)
+		this.seqnum = 0
 		return nil
 	}
 

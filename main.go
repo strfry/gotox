@@ -23,8 +23,13 @@ func feed_track(t *webrtc.Track) {
 
 	queue := toxav.NewRXQueue()
 
-	for frame := reader.NextFrame(); frame != nil; frame = reader.NextFrame() {
-//	for {
+	
+	for {
+		frame := reader.NextFrame()
+		if frame == nil {
+			frame = reader.NextFrame()
+		}
+
 		var packet toxav.ToxAVPacket
 		packet.Unmarshal(frame[1:]) // drop the channel/pt byte
 
