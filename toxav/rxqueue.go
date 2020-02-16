@@ -1,4 +1,4 @@
-package toxrtp
+package toxav
 
 import(
 	"fmt"
@@ -11,7 +11,7 @@ type RXQueue struct {
 }
 
 // this probably isnt idiomatic...
-func NewQueue() RXQueue {
+func NewRXQueue() RXQueue {
 	var queue RXQueue
 	queue.slots = make(map[uint16][]byte)
 	return queue

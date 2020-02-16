@@ -1,4 +1,4 @@
-package toxrtp
+package toxav
 
 // implement Tox's custom RTP "Payloading"
 
