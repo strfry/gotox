@@ -25,10 +25,10 @@ func (this *RXQueue) Receive(p *ToxAVPacket) []byte {
 
 	// search for slot in buffer
 	if buffer == nil {
-		buffer = make([]byte, p.data_length_full + 4)
+		buffer = make([]byte, p.data_length_full)
 		this.slots[seqnum] = buffer
 	} else {
-		if len(buffer) != int(p.data_length_full) + 4{
+		if len(buffer) != int(p.data_length_full){
 			fmt.Println("Warning: received inconsistent packets")
 			return nil
 		}
@@ -37,7 +37,7 @@ func (this *RXQueue) Receive(p *ToxAVPacket) []byte {
 	copy(buffer[p.offset_full:], p.Payload)
 
 	// now the hacky part:
-	if int(p.offset_full) + len(p.Payload) == len(buffer){
+	if int(p.offset_full) + len(p.Payload) == len(buffer) {
 		fmt.Println("A full frame has been received")
 		delete(this.slots, seqnum)
 		return buffer

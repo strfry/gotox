@@ -12,7 +12,7 @@ type ToxAVPayloader struct{}
 
 
 const (
-	toxAVHeaderSize = 64
+	toxAVHeaderSize = 80
 )
 
 // Payload fragments a VP8 packet across one or more byte arrays
@@ -56,6 +56,7 @@ type ToxAVPacket struct {
 
 	seqnum uint16
 	timestamp uint32
+	ssrc uint32
 	
 	// Those proprietary tox fields use the fully extended CSRC headers:
 
@@ -123,34 +124,33 @@ func (p *ToxAVPacket) Unmarshal(payload []byte) ([]byte, error) {
 	}
 
 	// TODO(strfry): read the other RTP fields
+	p.rtp_head1 = payload[0]
+	p.rtp_head2 = payload[1]
+	
 	p.seqnum = binary.BigEndian.Uint16(payload[2 : 4])
+	p.timestamp = binary.BigEndian.Uint32(payload[4:8])
+	p.timestamp = binary.BigEndian.Uint32(payload[8:12])
 
-	// another hack to avoiding retouching the numbers below...
-	payload = payload[12:]
+	p.flags = binary.BigEndian.Uint64(payload[12 : 20])
+	p.offset_full = binary.BigEndian.Uint32(payload[20 : 24])
+	p.data_length_full = binary.BigEndian.Uint32(payload[24 : 28])
+	p.received_length_full = binary.BigEndian.Uint32(payload[28 : 32])
 
-	payloadIndex := 0
+	p.frame_record_timestamp = binary.BigEndian.Uint64(payload[32 : 40])
+	p.fragment_num = binary.BigEndian.Uint32(payload[40 : 44])
+	p.real_frame_num = binary.BigEndian.Uint32(payload[44 : 48])
+	p.encoder_bit_rate_used = binary.BigEndian.Uint32(payload[48 : 52])
+	p.client_video_capture_delay_ms = binary.BigEndian.Uint32(payload[52 : 56])
 
-	p.flags = binary.BigEndian.Uint64(payload[0 : 8])
-	p.offset_full = binary.BigEndian.Uint32(payload[8 : 12])
-	p.data_length_full = binary.BigEndian.Uint32(payload[12 : 16])
-	p.received_length_full = binary.BigEndian.Uint32(payload[16 : 20])
+	// payload[56:76] // 5xu32 padding fields
 
-	p.frame_record_timestamp = binary.BigEndian.Uint64(payload[20 : 28])
-	p.fragment_num = binary.BigEndian.Uint32(payload[28 : 32])
-	p.real_frame_num = binary.BigEndian.Uint32(payload[32 : 36])
-	p.encoder_bit_rate_used = binary.BigEndian.Uint32(payload[36 : 40])
-	p.client_video_capture_delay_ms = binary.BigEndian.Uint32(payload[40 : 44])
+	p.offset_lower = binary.BigEndian.Uint16(payload[76 : 78])
+	p.data_length_lower = binary.BigEndian.Uint16(payload[78 : 80])
 
-	// payload[44:64] // 5xu32 padding fields
-
-	p.offset_lower = binary.BigEndian.Uint16(payload[64 : 66])
-	p.data_length_lower = binary.BigEndian.Uint16(payload[66 : 68])
-
-	payloadIndex = 64
-	if payloadIndex >= payloadLen {
+	if toxAVHeaderSize >= payloadLen {
 		return nil, fmt.Errorf("Payload is not large enough")
 	}
-	p.Payload = payload[payloadIndex:]
+	p.Payload = payload[toxAVHeaderSize:]
 	return p.Payload, nil
 }
 
