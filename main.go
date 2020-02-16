@@ -31,7 +31,7 @@ func feed_track(t *webrtc.Track) {
 		nalu := queue.Receive(&packet)
 
 		if nalu != nil {
-			packets:= packetizer.Packetize(nalu, 2000 /* samples, arbitrary ??? */)
+			packets:= packetizer.Packetize(nalu, 90000 /* samples, arbitrary ??? */)
 
 			for _, packet := range packets {
 	//fmt.Println("RTP")

@@ -21,11 +21,7 @@ func HTTPServer() chan string {
 			answer := <- sdpChan
 			w.Write([]byte(answer))
 			fmt.Println("use fmt")
-			//r.ParseForm()
-			//w.WriteHeader(http.StatusOK)
-			//w.Header().Add("Connection", "close")
-			//fmt.Fprintf(w, "{}\n", answer)
-			//r.Body.Close()
+			r.Body.Close()
 		} else {
 			http.Error(w, "Invalid Method", 405)
 		}
