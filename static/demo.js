@@ -1,11 +1,6 @@
 /* eslint-env browser */
 
 let pc = new RTCPeerConnection({
-  iceServers: [
-    {
-      urls: 'stun:stun.l.google.com:19302'
-    }
-  ]
 })
 let log = msg => {
   document.getElementById('logs').innerHTML += msg + '<br>'
