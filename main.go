@@ -16,7 +16,7 @@ import (
 
 
 func feed_track(t *webrtc.Track) {
-	fmt.Println("Feedibg packets")
+	fmt.Println("Feeding packets")
 	var reader toxav.FrameReader
 	packetizer := pionrtp.NewPacketizer(1200, t.PayloadType(), t.SSRC(), &pioncodecs.VP8Payloader{}, pionrtp.NewRandomSequencer(), 90000)
 	//packetizer := t.Packetizer
