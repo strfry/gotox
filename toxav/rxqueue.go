@@ -38,11 +38,10 @@ func (this *RXQueue) Receive(p *ToxAVPacket) []byte {
 
 	// now the hacky part:
 	if int(p.offset_full) + len(p.Payload) == len(buffer) {
-		fmt.Println("A full frame has been received")
 		delete(this.slots, seqnum)
 		return buffer
 	} else {
-		fmt.Println("not full frame", p.offset_full + uint32(len(p.Payload)), p.data_length_full)
+		//fmt.Println("not full frame", p.offset_full + uint32(len(p.Payload)), p.data_length_full)
 	}
 
 	return nil

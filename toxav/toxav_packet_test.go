@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"fmt"
 
-	"github.com/notedit/gstreamer-go"
+	"net"
 	"time"
 
 	pionrtp "github.com/pion/rtp"
@@ -55,28 +55,19 @@ func TestToxAVPacketUnmarshal(t *testing.T) {
 }
 
 
-
+// Verify RTP transmission with this command:
+// gst-launch-1.0 -vvv udpsrc address=:: port=1337 caps="application/x-rtp" ! rtpvp8depay ! vp8dec ! autovideosink
 func TestToxAV_RXQueue(t *testing.T) {
 	var reader FrameReader
 	queue := NewQueue()
 
+	packetizer := pionrtp.NewPacketizer(1200, 96, 0x13371137, &pioncodecs.VP8Payloader{}, pionrtp.NewRandomSequencer(), 90000)
 
-	//pipeline, err := gstreamer.New("appsrc name=mysource ! rtpvp8depay ! vp8dec ! autovideosink")
-	pipeline, err := gstreamer.New("appsrc name=mysource ! udpsink host=::1 port=1337")
+	socket, err := net.Dial("udp", "[::1]:1337")
 	
 	if err != nil {
-		t.Error("pipeline create error", err)
-		t.FailNow()
+		panic(err)
 	}
-	appsrc := pipeline.FindElement("mysource")
-	
-	//appsrc.SetCap("application/x-rtp")
-	appsrc.SetCap("application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)VP8")
-	
-	pipeline.Start()	
-
-
-	packetizer := pionrtp.NewPacketizer(1200, 96, 0x13371137, &pioncodecs.VP8Payloader{}, pionrtp.NewRandomSequencer(), 90000)
 	
 	for frame := reader.NextFrame(); frame != nil; frame = reader.NextFrame() {
 		var packet ToxAVPacket
@@ -85,19 +76,21 @@ func TestToxAV_RXQueue(t *testing.T) {
 		nalu := queue.Receive(&packet)
 
 		if nalu != nil {
-			packets:= packetizer.Packetize(nalu, 2000 /* samples, arbitrary */)
+			if ! (&pioncodecs.VP8PartitionHeadChecker{}).IsPartitionHead(nalu) {
+				t.Fatal("VP8 Packet is not a partition header")
+			}
 
-			fmt.Println("NALU split into ", len(packets), " packets")
+			packets:= packetizer.Packetize(nalu, 2000 /* samples, arbitrary ??? */)
 
 			for _, packet := range packets {
 				buf, err := packet.Marshal()
 
 				if err != nil {
+					fmt.Println(buf)
 					panic(err)
 				}
 
-			//fmt.Println("Writing packet ", buf)
-				appsrc.Push(buf)
+				socket.Write(buf)
 				time.Sleep(1 * time.Millisecond)
 			}
 		}
