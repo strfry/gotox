@@ -34,10 +34,9 @@ func feed_track(t *webrtc.Track) {
 			packets:= packetizer.Packetize(nalu, 2000 /* samples, arbitrary ??? */)
 
 			for _, packet := range packets {
-	fmt.Println("RTP")
+	//fmt.Println("RTP")
 				t.WriteRTP(packet)
-				//socket.Write(buf)
-				time.Sleep(1 * time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 			}
 		}
 	}
@@ -46,11 +45,16 @@ func feed_track(t *webrtc.Track) {
 }
 
 func main() {
+
+	sdpChan := HTTPServer()
+
+	fmt.Println("Visit http://localhost:8080/demo.html")
+
 	// Everything below is the Pion WebRTC API! Thanks for using it ❤️.
 
 	// Wait for the offer to be pasted
 	offer := webrtc.SessionDescription{}
-	Decode(MustReadStdin(), &offer)
+	Decode(<-sdpChan, &offer)
 
 	// We make our own mediaEngine so we can place the sender's codecs in it. Since we are echoing their RTP packet
 	// back to them we are actually codec agnostic - we can accept all their codecs. This also ensures that we use the
@@ -126,7 +130,8 @@ func main() {
 	}
 
 	// Output the answer in base64 so we can paste it in browser
-	fmt.Println(Encode(answer))
+	//fmt.Println(answer)
+	sdpChan <- Encode(answer)
 
 	// Block forever
 	select {}
